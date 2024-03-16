@@ -1,0 +1,63 @@
+import tkinter as tk
+from tkinter import messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+from tkinter import ttk
+from matplotlib_learn.matplotlib_trial import show_plot
+
+window = tk.Tk()
+window.title("Hello world")
+window.config(bg = "grey")
+window.geometry("500x500")
+
+font_style = ("Arial", 20)
+
+
+
+def spinach_window():
+    spin_window = tk.Toplevel()
+    spin_window.title("Spinach Data and Visualization")
+    spin_window.geometry("700x700")
+    spin_window.state("zoomed")
+
+    upper_frame = tk.Frame(spin_window)
+    upper_frame.pack(fill = "both", expand = True)
+    canvas1 = FigureCanvasTkAgg(show_plot(), upper_frame)
+    canvas1.draw()
+    canvas1.get_tk_widget().pack(side="left", fill="both", expand=True)
+    
+    
+
+def Veg_Selection(event):
+    data_text = f"{clicked.get()} data processing..."
+    msg_text = f"""This will start the process of cultivating the plant with its respective need...
+                 plant selected -->{clicked.get()} """
+    if clicked.get() == "Spinach":
+        tk.Label(window, text = data_text, bg = "grey", font = font_style).pack()
+        spinach_window()
+    elif clicked.get() == "Mint":
+        tk.Label(window, text = data_text, bg = "grey", font = font_style).pack()
+    elif clicked.get() == "Corriander":
+        tk.Label(window, text = data_text, bg = "grey", font = font_style).pack()
+    elif clicked.get() == "Fenugreek":
+        tk.Label(window, text = data_text, bg = "grey", font = font_style).pack()
+    messagebox.showinfo("about", msg_text)
+
+
+
+
+clicked = tk.StringVar()
+clicked.set("Vegetables")
+
+options = ["Spinach", "Mint", "Corriander", "Fenugreek"]
+
+vegies = tk.OptionMenu(window, clicked, *options, command = Veg_Selection)
+vegies.config(font = font_style, bg = "grey")
+vegies.pack()
+
+vegies_names = window.nametowidget(vegies.menuname)
+vegies_names.config(font = font_style, bg = "grey")
+
+
+
+window.mainloop()
