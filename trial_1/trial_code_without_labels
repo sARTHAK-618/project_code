@@ -3,7 +3,7 @@ from tkinter import messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from tkinter import ttk
-from matplotlib_learn.matplotlib_trial import show_plot
+from matplotlib_learn import matplotlib_normal_test
 
 window = tk.Tk()
 window.title("Hello world")
@@ -22,7 +22,7 @@ def spinach_window():
 
     upper_frame = tk.Frame(spin_window)
     upper_frame.pack(fill = "both", expand = True)
-    canvas1 = FigureCanvasTkAgg(show_plot(), upper_frame)
+    canvas1 = FigureCanvasTkAgg(matplotlib_normal_test, upper_frame)
     canvas1.draw()
     canvas1.get_tk_widget().pack(side="left", fill="both", expand=True)
     

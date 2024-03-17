@@ -26,3 +26,4 @@ def show_plot():
     plt.tight_layout()
     plt.show()
 
+show_plot()
