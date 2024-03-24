@@ -1,0 +1,80 @@
+import tkinter as tk
+from tkinter import ttk
+import requests
+from bs4 import BeautifulSoup
+import matplotlib.pyplot as plt
+
+# Initialize lists to store humidity and temperature data
+humidity_data = []
+temperature_data = []
+
+def fetch_data():
+    try:
+        response = requests.get("http://192.168.0.104/")  # Replace "your_server_ip" with the actual IP address of your server
+        html_content = response.text
+        soup = BeautifulSoup(html_content, 'html.parser')
+        sensor_data_div = soup.find('div', id='sensorData')
+        if sensor_data_div:
+            humidity_p = sensor_data_div.find('p', string=lambda text: "Humidity:" in text)
+            temperature_p = sensor_data_div.find('p', string=lambda text: "Temperature:" in text)
+            if humidity_p and temperature_p:
+                humidity = float(humidity_p.get_text().split(":")[1].strip().strip('%'))
+                temperature_text = temperature_p.get_text().split(":")[1].strip().replace('Â', '').replace('C', '')  # Remove unwanted characters
+                temperature = float(temperature_text)  # Convert temperature to float
+                humidity_data.append(humidity)  # Append new humidity value to the list
+                temperature_data.append(temperature)  # Append new temperature value to the list
+                update_humidity_plot()
+                update_temperature_plot()
+            else:
+                print("Humidity or temperature not found in sensorData.")
+        else:
+            print("Sensor data div not found in response.")
+    except Exception as e:
+        print("Error fetching data:", e)
+    
+    root.after(1000, fetch_data)  # Schedule next data fetch after 1000 milliseconds (1 second)
+
+def update_humidity_plot():
+    plt.figure(1)
+    plt.clf()
+    plt.plot(humidity_data, 'g-', label='Humidity')
+    plt.title('Humidity')
+    plt.xlabel('Time')
+    plt.ylabel('Value')
+    plt.grid(True)
+    plt.legend()
+    plt.pause(0.01)
+
+def update_temperature_plot():
+    plt.figure(2)
+    plt.clf()
+    plt.plot(temperature_data, 'r-', label='Temperature')
+    plt.title('Temperature')
+    plt.xlabel('Time')
+    plt.ylabel('Value')
+    plt.grid(True)
+    plt.legend()
+    plt.pause(0.01)
+
+root = tk.Tk()
+root.title("Humidity and Temperature Display")
+
+humidity_frame = ttk.Frame(root)
+humidity_frame.pack(side=tk.LEFT, padx=10, pady=10)
+temperature_frame = ttk.Frame(root)
+temperature_frame.pack(side=tk.LEFT, padx=10, pady=10)
+
+humidity_label = ttk.Label(humidity_frame, text="Humidity:")
+humidity_label.grid(row=0, column=0, sticky="w")
+humidity_value = tk.StringVar()
+humidity_entry = ttk.Entry(humidity_frame, textvariable=humidity_value, state='readonly')
+humidity_entry.grid(row=0, column=1, padx=5, pady=5)
+
+temperature_label = ttk.Label(temperature_frame, text="Temperature:")
+temperature_label.grid(row=0, column=0, sticky="w")
+temperature_value = tk.StringVar()
+temperature_entry = ttk.Entry(temperature_frame, textvariable=temperature_value, state='readonly')
+temperature_entry.grid(row=0, column=1, padx=5, pady=5)
+
+fetch_data()  # Initial fetch
+root.mainloop()
