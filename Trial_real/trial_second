@@ -25,7 +25,8 @@ def fetch_data():
                 temperature = float(temperature_text)  # Convert temperature to float
                 humidity_data.append(humidity)  # Append new humidity value to the list
                 temperature_data.append(temperature)  # Append new temperature value to the list
-                update_plots_and_display(humidity, temperature)
+                update_display(humidity, temperature)
+                update_plots()  # Update plots
             else:
                 print("Humidity or temperature not found in sensorData.")
         else:
@@ -38,10 +39,13 @@ def fetch_data():
     
     root.after(1000, fetch_data)  # Schedule next data fetch after 1000 milliseconds (1 second)
 
-def update_plots_and_display(humidity, temperature):
+def update_display(humidity, temperature):
+    humidity_display_label.config(text="Humidity: {:.2f}%".format(humidity))
+    temperature_display_label.config(text="Temperature: {:.2f}°C".format(temperature))
+
+def update_plots():
     plt.clf()  # Clear the current figure
-    
-    plt.subplot(221)  # Humidity plot
+    plt.subplot(211)  # Humidity plot
     plt.plot(humidity_data, 'g-', label='Humidity')
     plt.title('Humidity')
     plt.xlabel('Time')
@@ -49,7 +53,7 @@ def update_plots_and_display(humidity, temperature):
     plt.grid(True)
     plt.legend()
 
-    plt.subplot(222)  # Temperature plot
+    plt.subplot(212)  # Temperature plot
     plt.plot(temperature_data, 'r-', label='Temperature')
     plt.title('Temperature')
     plt.xlabel('Time')
@@ -57,40 +61,36 @@ def update_plots_and_display(humidity, temperature):
     plt.grid(True)
     plt.legend()
 
-    plt.subplot(223)  # Nutrients for Coriander
-    coriander_nutrients_label.config(text="Nutrients for Coriander:")
-    for i, (nutrient, requirement) in enumerate(coriander_nutrients.items(), start=1):
-        ttk.Label(nutrients_frame, text=f"{nutrient}:").grid(row=i, column=0, padx=5, pady=5, sticky="w")
-        ttk.Label(nutrients_frame, text=requirement).grid(row=i, column=1, padx=5, pady=5, sticky="w")
-
     plt.tight_layout()  # Adjust layout to prevent overlapping
-
-    humidity_display_label.config(text="Humidity: {:.2f}%".format(humidity))
-    temperature_display_label.config(text="Temperature: {:.2f}°C".format(temperature))
-
     canvas.draw()  # Draw the plot
-    root.update()  # Update the tkinter window
 
 root = tk.Tk()
 root.title("Coriander Farming Assistant")
 
-plot_frame = ttk.Frame(root)
-plot_frame.pack(padx=10, pady=10)
+display_frame = ttk.Frame(root)
+display_frame.pack(padx=10, pady=10)
 
-nutrients_frame = ttk.Frame(root)
-nutrients_frame.pack(padx=10, pady=10)
+humidity_display_label = ttk.Label(display_frame, text="Humidity: -")
+humidity_display_label.grid(row=0, column=0, padx=5, pady=5)
+temperature_display_label = ttk.Label(display_frame, text="Temperature: -")
+temperature_display_label.grid(row=0, column=1, padx=5, pady=5)
+
+led_status_label = ttk.Label(root, text="LED Status: -")
+led_status_label.pack(padx=10, pady=5)
 
 # Create and position the plot
-plt.figure(figsize=(10, 5))
-plt.subplot(221)  # Humidity plot
-plt.subplot(222)  # Temperature plot
-#plt.subplot(223)  # Nutrients for Coriander
+plt.figure(figsize=(8, 6))
+plt.subplot(211)  # Humidity plot
+plt.subplot(212)  # Temperature plot
 plt.tight_layout()  # Adjust layout to prevent overlapping
 
-humidity_display_label = ttk.Label(plot_frame, text="Humidity: -")
-humidity_display_label.grid(row=0, column=0, padx=5, pady=5)
-temperature_display_label = ttk.Label(plot_frame, text="Temperature: -")
-temperature_display_label.grid(row=0, column=1, padx=5, pady=5)
+# Embed the Matplotlib plot into the tkinter window
+canvas = FigureCanvasTkAgg(plt.gcf(), master=root)
+canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+# Nutrients frame
+nutrients_frame = ttk.Frame(root)
+nutrients_frame.pack(padx=10, pady=10)
 
 coriander_nutrients_label = ttk.Label(nutrients_frame, text="Nutrients for Coriander:")
 coriander_nutrients_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
@@ -103,14 +103,9 @@ coriander_nutrients = {
     "Magnesium": "Low"
 }
 
-# LED Status label
-led_status_label = ttk.Label(root, text="LED Status: -")
-led_status_label.pack(padx=10, pady=5)
-
-
-# Embed the Matplotlib plot into the tkinter window
-canvas = FigureCanvasTkAgg(plt.gcf(), master=plot_frame)
-canvas.get_tk_widget().grid(row=1, columnspan=2, padx=5, pady=5)
+for i, (nutrient, requirement) in enumerate(coriander_nutrients.items(), start=1):
+    ttk.Label(nutrients_frame, text=f"{nutrient}:").grid(row=i, column=0, padx=5, pady=5, sticky="w")
+    ttk.Label(nutrients_frame, text=requirement).grid(row=i, column=1, padx=5, pady=5, sticky="w")
 
 fetch_data()  # Initial fetch
 root.mainloop()
