@@ -3,6 +3,7 @@ from tkinter import ttk
 import requests
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # Initialize lists to store humidity and temperature data
 humidity_data = []
@@ -14,6 +15,7 @@ def fetch_data():
         html_content = response.text
         soup = BeautifulSoup(html_content, 'html.parser')
         sensor_data_div = soup.find('div', id='sensorData')
+        led_status_div = soup.find('div', id='ledStatus')
         if sensor_data_div:
             humidity_p = sensor_data_div.find('p', string=lambda text: "Humidity:" in text)
             temperature_p = sensor_data_div.find('p', string=lambda text: "Temperature:" in text)
@@ -23,58 +25,91 @@ def fetch_data():
                 temperature = float(temperature_text)  # Convert temperature to float
                 humidity_data.append(humidity)  # Append new humidity value to the list
                 temperature_data.append(temperature)  # Append new temperature value to the list
-                update_humidity_plot()
-                update_temperature_plot()
+                update_plots_and_display(humidity, temperature)
             else:
                 print("Humidity or temperature not found in sensorData.")
         else:
             print("Sensor data div not found in response.")
+        if led_status_div:
+            led_status = led_status_div.text.strip()
+            led_status_label.config(text=f"LED Status: {led_status}")
     except Exception as e:
         print("Error fetching data:", e)
     
     root.after(1000, fetch_data)  # Schedule next data fetch after 1000 milliseconds (1 second)
 
-def update_humidity_plot():
-    plt.figure(1)
-    plt.clf()
+def update_plots_and_display(humidity, temperature):
+    plt.clf()  # Clear the current figure
+    
+    plt.subplot(221)  # Humidity plot
     plt.plot(humidity_data, 'g-', label='Humidity')
     plt.title('Humidity')
     plt.xlabel('Time')
     plt.ylabel('Value')
     plt.grid(True)
     plt.legend()
-    plt.pause(0.01)
 
-def update_temperature_plot():
-    plt.figure(2)
-    plt.clf()
+    plt.subplot(222)  # Temperature plot
     plt.plot(temperature_data, 'r-', label='Temperature')
     plt.title('Temperature')
     plt.xlabel('Time')
     plt.ylabel('Value')
     plt.grid(True)
     plt.legend()
-    plt.pause(0.01)
+
+    plt.subplot(223)  # Nutrients for Coriander
+    coriander_nutrients_label.config(text="Nutrients for Coriander:")
+    for i, (nutrient, requirement) in enumerate(coriander_nutrients.items(), start=1):
+        ttk.Label(nutrients_frame, text=f"{nutrient}:").grid(row=i, column=0, padx=5, pady=5, sticky="w")
+        ttk.Label(nutrients_frame, text=requirement).grid(row=i, column=1, padx=5, pady=5, sticky="w")
+
+    plt.tight_layout()  # Adjust layout to prevent overlapping
+
+    humidity_display_label.config(text="Humidity: {:.2f}%".format(humidity))
+    temperature_display_label.config(text="Temperature: {:.2f}°C".format(temperature))
+
+    canvas.draw()  # Draw the plot
+    root.update()  # Update the tkinter window
 
 root = tk.Tk()
-root.title("Humidity and Temperature Display")
+root.title("Coriander Farming Assistant")
 
-humidity_frame = ttk.Frame(root)
-humidity_frame.pack(side=tk.LEFT, padx=10, pady=10)
-temperature_frame = ttk.Frame(root)
-temperature_frame.pack(side=tk.LEFT, padx=10, pady=10)
+plot_frame = ttk.Frame(root)
+plot_frame.pack(padx=10, pady=10)
 
-humidity_label = ttk.Label(humidity_frame, text="Humidity:")
-humidity_label.grid(row=0, column=0, sticky="w")
-humidity_value = tk.StringVar()
-humidity_entry = ttk.Entry(humidity_frame, textvariable=humidity_value, state='readonly')
-humidity_entry.grid(row=0, column=1, padx=5, pady=5)
+nutrients_frame = ttk.Frame(root)
+nutrients_frame.pack(padx=10, pady=10)
 
-temperature_label = ttk.Label(temperature_frame, text="Temperature:")
-temperature_label.grid(row=0, column=0, sticky="w")
-temperature_value = tk.StringVar()
-temperature_entry = ttk.Entry(temperature_frame, textvariable=temperature_value, state='readonly')
-temperature_entry.grid(row=0, column=1, padx=5, pady=5)
+# Create and position the plot
+plt.figure(figsize=(10, 5))
+plt.subplot(221)  # Humidity plot
+plt.subplot(222)  # Temperature plot
+plt.subplot(223)  # Nutrients for Coriander
+plt.tight_layout()  # Adjust layout to prevent overlapping
+
+humidity_display_label = ttk.Label(plot_frame, text="Humidity: -")
+humidity_display_label.grid(row=0, column=0, padx=5, pady=5)
+temperature_display_label = ttk.Label(plot_frame, text="Temperature: -")
+temperature_display_label.grid(row=0, column=1, padx=5, pady=5)
+
+coriander_nutrients_label = ttk.Label(nutrients_frame, text="Nutrients for Coriander:")
+coriander_nutrients_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+coriander_nutrients = {
+    "Nitrogen": "High",
+    "Phosphorus": "Medium",
+    "Potassium": "High",
+    "Calcium": "Medium",
+    "Magnesium": "Low"
+}
+
+# LED Status label
+led_status_label = ttk.Label(root, text="LED Status: -")
+led_status_label.pack(padx=10, pady=5)
+
+# Embed the Matplotlib plot into the tkinter window
+canvas = FigureCanvasTkAgg(plt.gcf(), master=plot_frame)
+canvas.get_tk_widget().grid(row=1, columnspan=2, padx=5, pady=5)
 
 fetch_data()  # Initial fetch
 root.mainloop()
