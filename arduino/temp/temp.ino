@@ -55,7 +55,7 @@ void loop() {
 
   float humidity = dht.readHumidity();
 
-  if (humidity >= 70.0) {
+  if (humidity >= 80.0) {
     digitalWrite(ledPin, HIGH); // Turn on LED
   } else {
     digitalWrite(ledPin, LOW); // Turn off LED
