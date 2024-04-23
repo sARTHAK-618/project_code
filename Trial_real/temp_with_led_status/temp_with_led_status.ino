@@ -5,10 +5,10 @@
 const char* ssid = "Indu";
 const char* password = "seahawks";
 
-const int DHTPin = 4;  // Pin to which the DHT sensor is connected
-const int DHTType = DHT22;  // DHT type (DHT11, DHT21, DHT22)
+const int DHTPin = 4;  
+const int DHTType = DHT22;  
 
-const int ledPin = 2; // Pin to which the LED is connected
+const int ledPin = 2;
 
 DHT dht(DHTPin, DHTType);
 
@@ -20,7 +20,7 @@ void setup() {
 
   dht.begin();
   pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW); // Ensure LED is initially off
+  digitalWrite(ledPin, LOW); 
 
   // Connect to Wi-Fi
   Serial.println();
@@ -39,10 +39,9 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  // Route for root / web page
   server.on("/", HTTP_GET, handleRoot);
 
-  // Route for sensor data
+
   server.on("/data", HTTP_GET, handleSensorData);
 
   server.begin();
@@ -71,7 +70,7 @@ void handleRoot() {
   webpage += "<div id='sensorData'>";
   webpage += "<p>Humidity: " + String(humidity) + "%</p>";
   webpage += "<p>Temperature: " + String(temperature) + "</p>";
-  webpage += "<p>LED Status: " + String(digitalRead(ledPin)) + "</p>"; // Include LED status
+  webpage += "<p>LED Status: " + String(digitalRead(ledPin)) + "</p>";
   webpage += "</div></body></html>";
 
   server.send(200, "text/html", webpage);
@@ -80,7 +79,7 @@ void handleRoot() {
 void handleSensorData() {
   float humidity = dht.readHumidity();
   float temperature = dht.readTemperature();
-  String ledStatus = digitalRead(ledPin) ? "ON" : "OFF"; // Convert LED status to string
+  String ledStatus = digitalRead(ledPin) ? "ON" : "OFF"; 
   String sensorData = "Humidity: " + String(humidity) + "%, Temperature: " + String(temperature) + ", LED Status: " + ledStatus;
   server.send(200, "text/plain", sensorData);
 }
