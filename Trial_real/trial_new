@@ -1,0 +1,152 @@
+import tkinter as tk
+from tkinter import ttk
+import requests
+import json
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+
+humidity_data = []
+temperature_data = []
+relay1_status = "-"
+relay2_status = "-"
+
+vegetable_nutrients = {
+    "Coriander": {
+        "Nitrogen": "High",
+        "Phosphorus": "Medium",
+        "Potassium": "High",
+        "Calcium": "Medium",
+        "Magnesium": "Low",
+        "Temperature": "20-30°C",
+        "Humidity": {"min": 40, "max": 60}
+    },
+    "Chia": {
+        "Nitrogen": "Medium",
+        "Phosphorus": "Low",
+        "Potassium": "High",
+        "Calcium": "High",
+        "Magnesium": "Medium",
+        "Temperature": "18-24°C",
+        "Humidity": {"min": 60, "max": 70}
+    },
+    "Spinach": {
+        "Nitrogen": "High",
+        "Phosphorus": "Low",
+        "Potassium": "Medium",
+        "Calcium": "High",
+        "Magnesium": "High",
+        "Temperature": "10-18°C",
+        "Humidity": {"min": 40, "max": 60}
+    }
+}
+
+def fetch_data():
+    global relay1_status, relay2_status
+    try:
+        response = requests.get("http://192.168.0.107/")
+        data = response.json()
+        humidity = data["humidity"]
+        temperature = data["temperature"]
+        relay1_status = data["relay1_status"]
+        relay2_status = data["relay2_status"]
+        humidity_data.append(humidity)
+        temperature_data.append(temperature)
+        update_display(humidity, temperature)
+    except Exception as e:
+        print("Error fetching data:", e)
+
+    root.after(5000, fetch_data)  # Update every 5 seconds
+
+def update_display(humidity, temperature):
+    humidity_display_label.config(text="Humidity: {:.2f}%".format(humidity))
+    temperature_display_label.config(text="Temperature: {:.2f}°C".format(temperature))
+    update_plots()
+    update_relay_status()
+
+def update_plots():
+    plt.clf()
+    plt.subplot(211)
+    plt.plot(humidity_data, 'g-', label='Humidity')
+    plt.title('Humidity')
+    plt.xlabel('Time')
+    plt.ylabel('Value')
+    plt.grid(True)
+    plt.legend()
+
+    plt.subplot(212)
+    plt.plot(temperature_data, 'r-', label='Temperature')
+    plt.title('Temperature')
+    plt.xlabel('Time')
+    plt.ylabel('Value')
+    plt.grid(True)
+    plt.legend()
+
+    plt.tight_layout()
+    canvas.draw()
+
+def update_relay_status():
+    relay1_status_label.config(text=f"Relay 1 Status: {relay1_status}")
+    relay2_status_label.config(text=f"Relay 2 Status: {relay2_status}")
+
+def start():
+    selected_vegetable = vegetable_var.get()
+    if selected_vegetable:
+        initial_screen_frame.pack_forget()
+        sensor_data_frame.pack(fill=tk.BOTH, expand=True)
+        fetch_data()
+        update_nutrients(selected_vegetable)
+        send_data_to_esp32(selected_vegetable)
+
+def send_data_to_esp32(selected_vegetable):
+    vegetable_data = {
+        "humidity_limits": vegetable_nutrients[selected_vegetable]["Humidity"],
+    }
+    vegetable_data_str = json.dumps(vegetable_data)
+    requests.post("http://192.168.0.107/set_vegetable_data", data=vegetable_data_str)
+
+def update_nutrients(vegetable):
+    nutrient_frame.pack_forget()
+    nutrient_frame.pack(padx=10, pady=10)
+    ttk.Label(nutrient_frame, text=f"Nutrients for {vegetable}", font=("Helvetica", 14)).pack(pady=5)
+    for nutrient, requirement in vegetable_nutrients[vegetable].items():
+        ttk.Label(nutrient_frame, text=f"{nutrient}: {requirement}").pack(padx=5, pady=2)
+
+root = tk.Tk()
+root.title("Hydrophonic Plantation")
+
+initial_screen_frame = ttk.Frame(root)
+initial_screen_frame.pack(padx=10, pady=10)
+
+ttk.Label(initial_screen_frame, text="Hydrophonic Plantation", font=("Helvetica", 18)).pack(pady=10)
+
+ttk.Label(initial_screen_frame, text="Select Vegetable:").pack(pady=5)
+vegetables = ["Coriander", "Chia", "Spinach"]
+vegetable_var = tk.StringVar(root)
+vegetable_dropdown = ttk.Combobox(initial_screen_frame, textvariable=vegetable_var, values=vegetables, state="readonly")
+vegetable_dropdown.pack(pady=5)
+
+start_button = ttk.Button(initial_screen_frame, text="Start", command=start)
+start_button.pack(pady=5)
+
+sensor_data_frame = ttk.Frame(root)
+
+humidity_display_label = ttk.Label(sensor_data_frame, text="Humidity: -")
+humidity_display_label.grid(row=0, column=0, padx=5, pady=5)
+temperature_display_label = ttk.Label(sensor_data_frame, text="Temperature: -")
+temperature_display_label.grid(row=0, column=1, padx=5, pady=5)
+relay1_status_label = ttk.Label(sensor_data_frame, text=f"Relay 1 Status: {relay1_status}")
+relay1_status_label.grid(row=1, column=0, padx=5, pady=5)
+relay2_status_label = ttk.Label(sensor_data_frame, text=f"Relay 2 Status: {relay2_status}")
+relay2_status_label.grid(row=1, column=1, padx=5, pady=5)
+
+plt.figure(figsize=(8, 6))
+plt.subplot(211)
+plt.subplot(212)
+plt.tight_layout()
+
+canvas = FigureCanvasTkAgg(plt.gcf(), master=sensor_data_frame)
+canvas.get_tk_widget().grid(row=2, columnspan=2, padx=10, pady=10, sticky="nsew")
+
+nutrient_frame = ttk.Frame(root)
+
+root.mainloop()
